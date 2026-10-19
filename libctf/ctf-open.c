@@ -1682,6 +1682,16 @@ ctf_bufopen (const ctf_sect_t *ctfsect, const ctf_sect_t *symsect,
   fp->ctf_str[CTF_STRTAB_0].cts_strs = (const char *) fp->ctf_buf
     + hp->cth_stroff;
   fp->ctf_str[CTF_STRTAB_0].cts_len = hp->cth_strlen;
+
+  if (hp->cth_strlen > 0
+      && fp->ctf_str[CTF_STRTAB_0].cts_strs[hp->cth_strlen - 1] != '\0')
+    {
+      ctf_err_warn (NULL, 0, ECTF_CORRUPT,
+		    _("CTF string table is not NUL-terminated"));
+      err = ECTF_CORRUPT;
+      goto bad;
+    }
+
   if (ctf_str_create_atoms (fp) < 0)
     {
       err = ENOMEM;
@@ -1725,6 +1735,14 @@ ctf_bufopen (const ctf_sect_t *ctfsect, const ctf_sect_t *symsect,
 
   if (strsect != NULL)
     {
+      if (strsect->cts_size > 0
+	  && ((const char *) strsect->cts_data)[strsect->cts_size - 1] != '\0')
+	{
+	  ctf_err_warn (NULL, 0, ECTF_CORRUPT,
+			_("CTF external string table is not NUL-terminated"));
+	  err = ECTF_CORRUPT;
+	  goto bad;
+	}
       fp->ctf_str[CTF_STRTAB_1].cts_strs = strsect->cts_data;
       fp->ctf_str[CTF_STRTAB_1].cts_len = strsect->cts_size;
     }
